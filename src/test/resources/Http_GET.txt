@@ -1,0 +1,4 @@
+GET /user/create?userId=oh&=1234&name=ohsungmin HTTP/1.1
+Host: localhost:8080
+Connection: keep-alive
+Accept: */*
