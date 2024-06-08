@@ -38,11 +38,7 @@ public class RequestHandler extends Thread {
             } else if ("/user/login".equals(path)) {
                 login(request, response);
             } else if ("/user/list".equals(path)) {
-                if (!isLogin(request.getHeaders("Cookie"))) {
-                    response.sendRedirect("/user/login.html");
-                    return;
-                }
-                listUser(response);
+                listUser(request, response);
             } else {
                 response.forward(path);
             }
@@ -52,7 +48,11 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private static void listUser(HttpResponse response) {
+    private static void listUser(HttpRequest request, HttpResponse response) {
+        if (!isLogin(request.getHeaders("Cookie"))) {
+            response.sendRedirect("/user/login.html");
+            return;
+        }
         Collection<User> users = DataBase.findAll();
         StringBuilder sb = new StringBuilder();
         sb.append("<table boader='1'>");
