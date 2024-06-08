@@ -1,6 +1,8 @@
 package util;
 
 import model.HttpMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.HashMap;
@@ -8,90 +10,41 @@ import java.util.Map;
 
 public class HttpRequest {
 
-    private String method;
-    private String path;
-
-    private boolean logined;
-
-    private int contentLength;
-
-    private Map<String, String> headers = new HashMap<>();
-
-    private Map<String, String> params = new HashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
 
     private RequestLine requestLine;
 
+    private HttpHeaders headers;
 
-    public HttpRequest(InputStream in) {
+    private RequestParams requestParams = new RequestParams();
+
+    public HttpRequest(InputStream is) {
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-
-            String line = br.readLine();
-            if (line == null) {
-                return;
-            }
-
-            //processRequestLine(line);
-            requestLine = new RequestLine();
-            requestLine.requestLine(line);
-
-            line = br.readLine();
-            while (!line.equals("")) {
-                String[] tokens =  line.split(" ");
-                headers.put(tokens[0].trim(), tokens[1].trim());
-                line = br.readLine();
-
-                if (line.contains("Cookie")) {
-                    logined = isLogin(line);
-                }
-
-                if (line.contains("Content-Length")) {
-                    contentLength = Integer.parseInt(line.split(":")[1].trim());
-                }
-            }
-
-            if ("POST".equals(method)) {
-                String body = IOUtils.readData(br, Integer.parseInt(headers.get("Content-Length")));
-                params = HttpRequestUtils.parseQueryString(body);
-            } else {
-                params = requestLine.getParams();
-            }
+            BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            requestLine = new RequestLine(createRequestLine(br));
+            requestParams.addQueryString(requestLine.getQueryString());
+            headers = processHeaders(br);
+            requestParams.addBody(IOUtils.readData(br, headers.getContentLength()));
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error(e.getMessage());
         }
     }
 
-    private void processRequestLine(String requestLine) {
-
-        String[] tokens =  requestLine.split(" ");
-        method = tokens[0];
-
-        if ("POST".equals(method)) {
-            path = tokens[1];
-            return;
+    private String createRequestLine(BufferedReader br) throws IOException {
+        String line = br.readLine();
+        if (line == null) {
+            throw new IllegalStateException();
         }
-
-        int index = tokens[1].indexOf("?");
-        if (index == -1) {
-            path = tokens[1];
-        } else {
-            path = tokens[1].substring(0, index);
-            params = HttpRequestUtils.parseQueryString(tokens[1].substring(index+1));
-        }
+        return line;
     }
 
-    private static boolean isLogin(String line) {
-        String[] tokens = line.split(":");
-        Map<String, String> cookiesMap = HttpRequestUtils.parseCookies(tokens[1].trim());
-        String value = cookiesMap.get("logined");
-
-        if (value == null) {
-            return false;
+    private HttpHeaders processHeaders(BufferedReader br) throws IOException {
+        HttpHeaders headers = new HttpHeaders();
+        String line;
+        while (!(line = br.readLine()).equals("")) {
+            headers.add(line);
         }
-
-        return Boolean.parseBoolean(value);
+        return headers;
     }
 
     public HttpMethod getMethod() {
@@ -102,19 +55,11 @@ public class HttpRequest {
         return requestLine.getPath();
     }
 
-    public String getHeaders(String name) {
-        return headers.get(name);
+    public String getHeader(String name) {
+        return headers.getHeader(name);
     }
 
-    public String getParams(String name) {
-        return params.get(name);
-    }
-
-    public boolean isLogined() {
-        return logined;
-    }
-
-    public int getContentLength() {
-        return contentLength;
+    public String getParameter(String name) {
+        return requestParams.getParameter(name);
     }
 }
