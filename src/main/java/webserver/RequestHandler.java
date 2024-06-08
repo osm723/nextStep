@@ -38,7 +38,11 @@ public class RequestHandler extends Thread {
             } else if ("/user/login".equals(path)) {
                 login(request, response);
             } else if ("/user/list".equals(path)) {
-                if (listUser(request, response)) return;
+                if (!isLogin(request.getHeaders("Cookie"))) {
+                    response.sendRedirect("/user/login.html");
+                    return;
+                }
+                listUser(response);
             } else {
                 response.forward(path);
             }
@@ -48,12 +52,7 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private static boolean listUser(HttpRequest request, HttpResponse response) {
-        if (!isLogin(request.getHeaders("Cookie"))) {
-            response.sendRedirect("/user/login.html");
-            return true;
-        }
-
+    private static void listUser(HttpResponse response) {
         Collection<User> users = DataBase.findAll();
         StringBuilder sb = new StringBuilder();
         sb.append("<table boader='1'>");
@@ -67,7 +66,6 @@ public class RequestHandler extends Thread {
         sb.append("</table>");
 
         response.forwardBody(sb.toString());
-        return false;
     }
 
     private static void login(HttpRequest request, HttpResponse response) {
@@ -95,6 +93,14 @@ public class RequestHandler extends Thread {
         response.sendRedirect("/index.html");
     }
 
+    /*
+     * getReadBytesFile
+     * Files 읽어서 urlPath return
+     */
+//    private static byte[] getReadBytesFile(String loginFailUrl) throws IOException {
+//        return Files.readAllBytes(new File("./webapp" + loginFailUrl).toPath());
+//    }
+
     private static boolean isLogin(String line) {
         String[] tokens = line.split(":");
         Map<String, String> cookiesMap = HttpRequestUtils.parseCookies(tokens[1].trim());
@@ -113,4 +119,112 @@ public class RequestHandler extends Thread {
         }
         return path;
     }
+
+    /*
+     * forward
+     * 응답처리 = 직접응답
+     */
+//    private static void forward(OutputStream out, byte[] body, String contentType) {
+//        DataOutputStream dos = new DataOutputStream(out);
+//
+//        try {
+//            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+//            dos.writeBytes("Content-Type: "+contentType+"\r\n");
+//            dos.writeBytes("Content-Length: " + body.length + "\r\n");
+//            dos.writeBytes("\r\n");
+//
+//            // responseBody
+//            dos.write(body, 0, body.length);
+//            dos.flush();
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+    /*
+    * sendRedirect
+    * 응답처리 = 리다이렉트
+    */
+//    private static void sendRedirect(OutputStream out, String url,boolean logined) {
+//        DataOutputStream dos = new DataOutputStream(out);
+//
+//        try {
+//            if (logined) {
+//                //getResponse302LoginHeader
+//                dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+//                dos.writeBytes("Set-Cookie: logined=true \r\n");
+//                dos.writeBytes("Location: " + url + " \r\n");
+//                dos.writeBytes("\r\n");
+//            } else {
+//                //response302Header
+//                dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+//                dos.writeBytes("Location: " + url + " \r\n");
+//                dos.writeBytes("\r\n");
+//            }
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+//    private static void getResponseResource(OutputStream out, String url) throws Exception{
+//        DataOutputStream dos = new DataOutputStream(out);
+//        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+//        //response200Header(dos, body.length);
+//        forward(dos, body.length, "text/html;charset=utf-8");
+//        responseBody(dos, body);
+//    }
+
+//    private static void getResponse302LoginHeader(DataOutputStream dos, String url) {
+//        try {
+//            dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+//            dos.writeBytes("Set-Cookie: logined=true \r\n");
+//            dos.writeBytes("Location: " + url + " \r\n");
+//            dos.writeBytes("\r\n");
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+//    private static void response200CssHeader(DataOutputStream dos, int lengthOfBodyContent) {
+//        try {
+//            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+//            dos.writeBytes("Content-Type: text/css\r\n");
+//            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+//            dos.writeBytes("\r\n");
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+//    private static void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+//        try {
+//            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+//            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+//            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+//            dos.writeBytes("\r\n");
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+//    private void response302Header(DataOutputStream dos, String url) {
+//        try {
+//            dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+//            dos.writeBytes("Location: " + url + " \r\n");
+//            dos.writeBytes("\r\n");
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+//    private static void responseBody(DataOutputStream dos, byte[] body) {
+//        try {
+//            dos.write(body, 0, body.length);
+//            dos.flush();
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
+
+
 }
