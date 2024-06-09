@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import util.HttpRequest;
 import util.HttpRequestUtils;
 import util.HttpResponse;
+import util.HttpSession;
 
 import java.util.Collection;
 import java.util.Map;
@@ -17,7 +18,8 @@ public class ListUserController implements Controller {
 
     @Override
     public void service(HttpRequest request, HttpResponse response) {
-        if (!isLogin(request.getHeader("Cookie"))) {
+        //if (!isLogin(request.getHeader("Cookie"))) {
+        if (!isLogin(request.getSession())) {
             response.sendRedirect("/user/login.html");
             return;
         }
@@ -36,15 +38,21 @@ public class ListUserController implements Controller {
         response.forwardBody(sb.toString());
     }
 
-    private static boolean isLogin(String line) {
-        String[] tokens = line.split(":");
-        Map<String, String> cookiesMap = HttpRequestUtils.parseCookies(tokens[1].trim());
-        String value = cookiesMap.get("logined");
-
-        if (value == null) {
+    private static boolean isLogin(HttpSession session) {
+        Object user = session.getAttribute("user");
+        if (user == null) {
             return false;
         }
+        return true;
 
-        return Boolean.parseBoolean(value);
+//        String[] tokens = line.split(":");
+//        Map<String, String> cookiesMap = HttpRequestUtils.parseCookies(tokens[1].trim());
+//        String value = cookiesMap.get("logined");
+//
+//        if (value == null) {
+//            return false;
+//        }
+//
+//        return Boolean.parseBoolean(value);
     }
 }

@@ -2,6 +2,8 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Map;
+import java.util.UUID;
 
 import Controller.Controller;
 import Controller.RequestMapping;
@@ -28,6 +30,14 @@ public class RequestHandler extends Thread {
             HttpResponse response = new HttpResponse(out);
             String path = getDefaultPath(request.getPath());
 
+//            if (getSessionId(request.getHeader("Cookie")) == null) {
+//                response.addHeader("Set-Cookie", "JSESSIONID="+ UUID.randomUUID());
+//            }
+
+            if (request.getCookies().getCookie("JSESSIONID") == null) {
+                response.addHeader("Set-Cookie", "JSESSIONID="+ UUID.randomUUID());
+            }
+
             log.info("path=====================", path);
 
             Controller controller = RequestMapping.getController(request.getPath());
@@ -40,6 +50,11 @@ public class RequestHandler extends Thread {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private String getSessionId(String cookieValue) {
+        Map<String, String> cookies = HttpRequestUtils.parseCookies(cookieValue);
+        return cookies.get("JSESSIONID");
     }
 
     private String getDefaultPath(String path) {
